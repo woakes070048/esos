@@ -1,0 +1,47 @@
+#! /bin/sh
+
+source /etc/rc.d/common
+
+QNETD_CONFIG="/etc/sysconfig/corosync-qnetd"
+COROSYNC_QNETD="/usr/bin/corosync-qnetd"
+QNETD_PID_FILE="/var/run/corosync-qnetd/corosync-qnetd.pid"
+QNETD_LOCK="/var/lock/qnetd"
+
+check_args ${@}
+
+# Load configuration (and export all variables)
+if [ -f "${QNETD_CONFIG}" ]; then
+    set -a
+    . ${QNETD_CONFIG}
+    set +a
+fi
+
+start() {
+    /bin/echo "Starting corosync-qnetd..."
+    var_run_dir="$(dirname "${QNETD_PID_FILE}")"
+    /bin/mkdir -p "${var_run_dir}"
+    /bin/chmod 0770 "${var_run_dir}"
+    if [ -n "${COROSYNC_QNETD_RUNAS}" ]; then
+        /bin/chown "${COROSYNC_QNETD_RUNAS}:${COROSYNC_QNETD_RUNAS}" \
+            "${var_run_dir}"
+        su -s /bin/bash "${COROSYNC_QNETD_RUNAS}" -c \
+            "${COROSYNC_QNETD} ${COROSYNC_QNETD_OPTIONS} > /dev/null 2>&1"
+    else
+        ${COROSYNC_QNETD} ${COROSYNC_QNETD_OPTIONS} > /dev/null 2>&1
+    fi
+    /bin/touch ${QNETD_LOCK}
+}
+
+stop() {
+    /bin/echo "Stopping corosync-qnetd..."
+    /usr/bin/kill -TERM $(/usr/bin/pidof ${COROSYNC_QNETD}) || exit 1
+    wait_for_stop ${COROSYNC_QNETD} && /bin/rm -f ${QNETD_LOCK}
+}
+
+status() {
+    /usr/bin/pidof ${COROSYNC_QNETD} > /dev/null 2>&1
+    exit ${?}
+}
+
+# Perform specified action
+${1}

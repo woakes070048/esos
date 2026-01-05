@@ -1,3 +1,9 @@
+2026-01-05  Marc A. Smith  <marc.smith@quantum.com>
+
+	Merge branch 'corosync_qdevice'
+
+	added the corosync-qdevice package and associated rc/init scripts
+
 2025-12-02  Marc A. Smith  <marc.smith@quantum.com>
 
 	Merge branch 'esos2iso_fix'

@@ -357,6 +357,7 @@ dist_files	= $(addprefix $(DIST_FILES_DIR)/, \
 		smp_utils-0.99.tar.xz \
 		sasutils-0.3.13.tar.gz \
 		moreutils-master_20250114.tar.xz \
+		corosync_qdevice-3.0.4.tar.gz \
 		win_binaries-20180813.tar.xz)
 dist_files_repo	= http://download.esos-project.com/dist_files
 
@@ -444,7 +445,7 @@ chroot_tgts	:= kernel_headers.chroot glibc.chroot gcc.chroot \
 		xz.chroot wget.chroot cacerts.chroot mlnx-tools.chroot \
 		zip.chroot cpuset.chroot switchtec-user.chroot bwm-ng.chroot \
 		lz4.chroot minicom.chroot smp_utils.chroot sasutils.chroot \
-		moreutils.chroot
+		moreutils.chroot corosync_qdevice.chroot
 
 # And finally these targets should be built without parallel execution
 system_tgts	:= bash.chroot findutils.chroot sed.chroot tar.chroot
@@ -5196,6 +5197,25 @@ moreutils.chroot: glibc.chroot perl.chroot docbook-xsl-nons.chroot
 	sponge mispipe lckdo parallel errno /usr/bin/
 	cd $(tgt_src_dir) && $(INSTALL) -v vidir vipe ts combine zrun \
 	chronic /usr/bin/
+	$(TOUCH) $(@)
+	$(QUIET) $(ECHO) "### Done $(@)"
+
+corosync_qdevice.chroot: glibc.chroot corosync.chroot nss.chroot
+	$(QUIET) $(ECHO) "### Building $(@)"
+	$(call chroot_only)
+	$(QUIET) if [ ! -f "$(tgt_src_dir)/configure" ]; then \
+	  cd $(tgt_src_dir) && ./autogen.sh; \
+	fi
+	cd $(tgt_src_dir) && ./configure --prefix=/usr --sysconfdir=/etc \
+	--localstatedir=/var --with-initddir=""
+	$(MAKE) --directory=$(tgt_src_dir)
+	$(MAKE) --directory=$(tgt_src_dir) install
+	$(INSTALL) -D -m 0644 \
+	$(tgt_src_dir)/init/corosync-qdevice.sysconfig.example \
+	/etc/sysconfig/corosync-qdevice
+	$(INSTALL) -D -m 0644 \
+	$(tgt_src_dir)/init/corosync-qnetd.sysconfig.example \
+	/etc/sysconfig/corosync-qnetd
 	$(TOUCH) $(@)
 	$(QUIET) $(ECHO) "### Done $(@)"
 

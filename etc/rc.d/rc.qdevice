@@ -1,0 +1,40 @@
+#! /bin/sh
+
+source /etc/rc.d/common
+
+QDEVICE_CONFIG="/etc/sysconfig/corosync-qdevice"
+COROSYNC_QDEVICE="/usr/sbin/corosync-qdevice"
+QDEVICE_PID_FILE="/var/run/corosync-qdevice/corosync-qdevice.pid"
+QDEVICE_LOCK="/var/lock/qdevice"
+
+check_args ${@}
+
+# Load configuration (and export all variables)
+if [ -f "${QDEVICE_CONFIG}" ]; then
+    set -a
+    . ${QDEVICE_CONFIG}
+    set +a
+fi
+
+start() {
+    /bin/echo "Starting corosync-qdevice..."
+    var_run_dir="$(dirname "${QDEVICE_PID_FILE}")"
+    /bin/mkdir -p "${var_run_dir}"
+    /bin/chmod 0770 "${var_run_dir}"
+    ${COROSYNC_QDEVICE} ${COROSYNC_QDEVICE_OPTIONS} > /dev/null 2>&1
+    /bin/touch ${QDEVICE_LOCK}
+}
+
+stop() {
+    /bin/echo "Stopping corosync-qdevice..."
+    /usr/bin/kill -TERM $(/usr/bin/pidof ${COROSYNC_QDEVICE}) || exit 1
+    wait_for_stop ${COROSYNC_QDEVICE} && /bin/rm -f ${QDEVICE_LOCK}
+}
+
+status() {
+    /usr/bin/pidof ${COROSYNC_QDEVICE} > /dev/null 2>&1
+    exit ${?}
+}
+
+# Perform specified action
+${1}
